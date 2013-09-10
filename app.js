@@ -33,21 +33,6 @@ app.get('/users', user.list);
 var io = require('socket.io').listen(app.listen(app.get('port')));
 
 io.sockets.on('connection', function (socket) {
-    socket.emit('message', { message: 'welcome to the chat' });
-    
-    socket.on('command', function (data) {
-        child = exec(data + '', function (error, stdout, stderr) {
-            io.sockets.emit('data',  {data: stdout});
-            io.sockets.emit('data',  {data: stderr});
-            
-            console.log('stdout: ' + stdout);
-            console.log('stderr: ' + stderr);
-            
-            if (error !== null) {
-                io.sockets.emit('data',  {data: error});
-                console.log('exec error: ' + error);
-            }
-        });
-    });
+    socket.emit('connected', { on: true });
 });
 console.log('Express server listening on port ' + app.get('port'));

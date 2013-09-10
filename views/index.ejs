@@ -37,11 +37,18 @@
     <div class="container">
 
       <div class="starter-template">
-        <form role="form" onsubmit="return false;">
-          <div class="form-group">
-            <input type="text" style="display:none" class="form-control" id="command" value="" placeholder="Enter command">
+        <div id="switch" class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Raging Flame RaspberryPi</h3>
           </div>
-        </form>
+          <div class="panel-body">
+            <div class="btn-group">
+              <button class="btn btn-default" type="button" >
+                <span class="switch-text">OFF</span>
+              </button>
+            </div>
+          </div>
+        </div>
         <div id="cmder"></div>
       </div>
 
@@ -56,31 +63,18 @@
     $(window).load(function() {
         var socket = io.connect('http://localhost:3000');
         
-        socket.on('message', function (data) {
-            if (data.message) {
-                $("#command").fadeIn();
+        socket.on('connected', function (data) {
+            if (data.on) {
+                $("#switch").removeClass('panel-default').addClass('panel-primary');
+                $("#switch .switch-text").text("ON");
+                $("#switch .btn").addClass("btn-primary");
             }
         });
         
-        socket.on('data', function (data) {
-            if (data.data) {
-                $('#cmder').prepend('<p>' + data.data.split('\n').join('<br>') + '</p>')
-            }
-        });
-        
-        function exec(command) {
-            socket.emit('command', command); 
-        }
-	
-        $("#command").keyup(function(e) {
-            e.preventDefault();
-            
-            var value = $(this).val();
-            if (e.keyCode == 13 && value.length > 0) {
-                exec(value);
-                
-                $(this).val('').focus();
-            }
+        socket.on('disconnect', function (data) {
+                $("#switch").removeClass('panel-primary').addClass('panel-default');
+                $("#switch .switch-text").text("OFF");
+                $("#switch .btn").removeClass("btn-primary");
         });
     });
     </script>
