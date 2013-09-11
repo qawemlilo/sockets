@@ -21,7 +21,7 @@
 
   <body>
 
-    <div class="navbar navbar-inverse navbar-fixed-top">
+    <div class="navbar navbar-default navbar-fixed-top" role="navigation">
       <div class="container">
         <div class="navbar-header">
           <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
@@ -29,8 +29,14 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="#">Project name</a>
+          <a class="navbar-brand" href="#">RagingFlamePi</a>
         </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="#">Home</a></li>
+            <li><a href="#settings">Settings</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
       </div>
     </div>
 
@@ -39,11 +45,14 @@
       <div class="starter-template">
         <div id="switch" class="panel panel-default">
           <div class="panel-heading">
-            <h3 class="panel-title">Raging Flame RaspberryPi</h3>
+            <h3 class="panel-title"><span class="glyphicon glyphicon-off"></span> Connection Status</h3>
           </div>
           <div class="panel-body">
             <div class="btn-group">
-              <button class="btn btn-default" type="button" >
+              <button class="btn btn-warning btn-on" type="button" >
+                <span class="switch-text">ON</span>
+              </button>
+              <button class="btn btn-default btn-off disabled" type="button" >
                 <span class="switch-text">OFF</span>
               </button>
             </div>
@@ -59,24 +68,123 @@
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
     <script src="/js/jquery.js"></script>
+    <script src="/js/underscore.js"></script>
+    <script src="/js/backbone.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
     <script>
-    $(window).load(function() {
-        var socket = io.connect('http://localhost:3000');
-        
-        socket.on('connected', function (data) {
-            if (data.on) {
-                $("#switch").removeClass('panel-default').addClass('panel-primary');
-                $("#switch .switch-text").text("ON");
-                $("#switch .btn").addClass("btn-primary");
-            }
-        });
-        
-        socket.on('disconnect', function (data) {
-                $("#switch").removeClass('panel-primary').addClass('panel-default');
-                $("#switch .switch-text").text("OFF");
-                $("#switch .btn").removeClass("btn-primary");
-        });
+    
+    var switchModel = Backbone.Model.extend({
+        defaults: {
+            'connected': false,
+            'activated': false,
+            'server': 'http://localhost:3000'
+        }
     });
+    
+    var switchView = Backbone.View.extend({
+        el: '#switch',
+        
+        
+        socket: false,
+        
+        
+        events: {
+            'click .btn-on': 'onButton',
+            'click .btn-off': 'offButton'
+        },
+        
+        
+        initialize: function () {
+            var hash = window.location.hash,
+                self = this;
+        
+            if (hash) {
+                hash = hash.substring(1);
+                if (hash === 'reconnect') {
+                   self.socketConnect(); 
+                }
+            }
+            
+            //_.extend(self, Backbone.Events);
+            
+            self.listenTo(self.model, 'change:connected', function () {
+                if (self.model.get('connected')) {
+                    self.switchOn();  
+                }
+                else {
+                    self.switchOff();
+                }
+            });
+        },
+        
+        
+        socketConnect: function () {
+            var self = this;
+            
+            self.socket = io.connect(self.server);
+        
+            self.socket.on('connected', function (data) {
+                if (data.on) {
+                    self.model.set({connected: true});
+                }
+            });
+        
+            self.socket.on('disconnect', function (data) {
+                self.model.set({connected: false});
+            });      
+        },
+        
+        
+        onButton: function (e) {
+            e.preventDefault();
+            
+            if (!this.socket) {
+                this.socketConnect();
+            }
+            else if (this.model.get('activated')) {
+                location.hash = "#reconnect";
+                location.reload();
+            }
+            
+            return false;      
+        },
+        
+        
+        offButton: function (e) {
+            e.preventDefault();
+            
+            if (this.socket) {
+               this.socket.disconnect();
+               this.model.set({activated: true});
+            }
+            
+            return false;      
+        },
+        
+        
+        switchOn: function () {
+            this.$el.removeClass('panel-default').addClass('panel-info');
+            this.$(".btn-off").removeClass("disabled");
+            this.$(".btn-on").removeClass("btn-warning").addClass('btn-info');
+        },
+        
+        
+        switchOff: function () {
+            this.$el.removeClass('panel-info').addClass('panel-default');
+            this.$(".btn-off").addClass("disabled");
+            this.$(".btn-on").removeClass("btn-info").addClass('btn-warning');        
+        }        
+    });
+    
+    
+    $(window).load(function() {
+        var piSwitch =  new switchView({
+            model: new switchModel() 
+        });
+        
+        piSwitch.socketConnect();
+    });
+    
     </script>
   </body>
 </html>

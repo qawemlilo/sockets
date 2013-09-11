@@ -33,6 +33,7 @@ app.get('/users', user.list);
 var io = require('socket.io').listen(app.listen(app.get('port')));
 
 io.sockets.on('connection', function (socket) {
+
     socket.emit('connected', { on: true });
 });
 console.log('Express server listening on port ' + app.get('port'));
